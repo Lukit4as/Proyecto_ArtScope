@@ -6,6 +6,7 @@ Funciones básicas para cargar y describir imágenes digitales en el proyecto Ar
 
 from pathlib import Path
 
+import cv2
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 
@@ -89,3 +90,61 @@ def get_pixel(image: Image.Image, x: int, y:int):
     image_array = np.asarray(image)
 
     return image_array[y, x] 
+
+def load_image_cv2(image_path: str) -> np.ndarray:
+    """
+    Carga una imagen utilizando OpenCV.
+    La imagen se devuelve en formato BGR.
+
+    Args:
+        image_path: Ruta del archivo de imagen.
+
+    Returns:
+        np.ndarray: Imagen representada como matriz NumPy.
+
+    Raises:
+        FileNotFoundError: Si el archivo no existe.
+        ValueError: Si OpenCV no puede interpretar la imagen.
+    """
+    path = Path(image_path)
+
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"No se encontró el archivo: {path}"
+        )
+
+    image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+
+    if image is None:
+        raise ValueError(
+            f"No se pudo cargar la imagen: {path}"
+        )
+    
+    return image
+
+def convert_bgr_to_rgb(image: np.ndarray) -> np.ndarray:
+
+    """
+    Convierte una imagen del formato BGR al formato RGB.
+
+    Args:
+        image: Imagen representada en formato BGR.
+
+    Returns:
+        np.ndarray: Imagen convertida al formato RGB.
+
+    Raises:
+        ValueError: Si la imagen no tiene tres canales.
+    """
+
+    if not isinstance(image, np.ndarray):
+        raise TypeError(
+            "La imagen debe ser un array de NumPy"
+        )
+
+    if image.ndim != 3 or image .shape[2] !=3:
+        raise ValueError(
+            "La imagen debe tener tres canales de color"
+        )
+
+    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
