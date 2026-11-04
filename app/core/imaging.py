@@ -148,3 +148,35 @@ def convert_bgr_to_rgb(image: np.ndarray) -> np.ndarray:
         )
 
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+def convert_to_grayscale(image: np.ndarray) -> np.ndarray:
+    """
+    Convierte una imagen BGR a escala de grises.
+
+    Args:
+        image: Imagen representada en formato BGR
+    
+    Returns:
+        np.ndarray: Imagen de un solo canal en escala de grises.
+    
+    Raises:
+        ValueError: Si la imagen no tiene tres canales
+
+    """
+
+    if not isinstance(image, np.ndarray):
+        raise TypeError(
+            "La imagen debe ser un array de NumPy."
+        )
+
+    if image.ndim != 3 or image.shape[2] != 3:
+        raise ValueError(
+            "La imagen debe tener tres canales de color."
+        )
+
+    grayscale_image = cv2.cvtColor(
+        image,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    return grayscale_image
