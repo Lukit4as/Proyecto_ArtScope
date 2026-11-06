@@ -65,7 +65,7 @@ def calculate_grayscale_histogram(image: np.ndarray) -> dict:
         dict: Histograma y estadística de luminosidad.
     """
 
-    if not isinstance(image, np.ndarray)
+    if not isinstance(image, np.ndarray):
         raise TypeError(
             "La imagen debe ser un array de NumPy"
         )
