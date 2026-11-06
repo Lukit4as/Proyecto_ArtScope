@@ -53,3 +53,38 @@ def calculate_color_histograms(image: np.ndarray) -> dict:
         histograms[channel_name] = histogram.flatten()
 
     return histograms
+
+def calculate_grayscale_histogram(image: np.ndarray) -> dict:
+    """
+    Calcula el histograma y estadísticas de luminosidad de una imagen en escala de grises.
+
+    Args:
+        image: Imagen representada en escala de grises
+
+    Returns:
+        dict: Histograma y estadística de luminosidad.
+    """
+
+    if not isinstance(image, np.ndarray)
+        raise TypeError(
+            "La imagen debe ser un array de NumPy"
+        )
+
+    if image.ndim !=2:
+        raise ValueError(
+            "La imagen debe estar en escala de grises"
+        )
+
+    histogram = cv2.calcHist(
+        [image],
+        [0],
+        [256],
+        [0, 256],
+    ).flatten()
+
+    return {
+        "histogram": histogram,
+        "minimum": int(image.min()),
+        "maximum": int(image.max()),
+        "mean": float(image.mean())
+    }
