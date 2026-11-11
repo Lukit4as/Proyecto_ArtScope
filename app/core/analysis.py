@@ -75,12 +75,10 @@ def calculate_grayscale_histogram(image: np.ndarray) -> dict:
             "La imagen debe estar en escala de grises"
         )
 
-    histogram = cv2.calcHist(
-        [image],
-        [0],
-        [256],
-        [0, 256],
-    ).flatten()
+    histogram = np.bincount(
+    image.ravel(),
+    minlength=256
+)
 
     return {
         "histogram": histogram,
@@ -88,3 +86,25 @@ def calculate_grayscale_histogram(image: np.ndarray) -> dict:
         "maximum": int(image.max()),
         "mean": float(image.mean())
     }
+
+def detect_edges(image: np.ndarray, threshold1: int = 100, threshold2: int=200) -> np.ndarray:
+    """
+    Detecta los bordes de una imagen en escala de grises utilizando el algoritmo Canny.
+    """
+
+    if not isinstance(image, np.ndarray):
+        raise TypeError("La imagen debe ser un array de NumPy.")
+
+    if image.ndim != 2:
+        raise ValueError("La imagen debe estar en escala de grises.")
+
+    if not (0 <= threshold1 < threshold2 <= 255):
+        raise ValueError("Los umbrales deben cumplir: 0 <=threshold1 < threshold2 <= 255.")
+
+    edges = cv2.Canny(
+        image,
+        threshold1,
+        threshold2
+    )
+
+    return edges
