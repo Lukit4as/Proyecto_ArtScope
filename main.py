@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.routes import router
+from app.routers.health import router as health_router
 
 app = FastAPI(
     title="ArtScope API",
@@ -7,5 +7,4 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.include_router(router)
-
+app.include_router(health_router)

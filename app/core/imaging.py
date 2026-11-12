@@ -180,3 +180,45 @@ def convert_to_grayscale(image: np.ndarray) -> np.ndarray:
     )
 
     return grayscale_image
+
+def decode_image_bytes(image_bytes: bytes) -> np.ndarray:
+    """
+    Decodifica una imagen recibida como bytes y la convierte en un array de NumPy en formato BGR.
+
+    Args:
+        image_bytes: Contenido binatio de la imagen.
+    
+    Returns:
+        np.ndarray: Imagen decodificada en formato BGR.
+    
+    Raises: 
+        TypeError: Si la entrada no es de tipo bytes.
+        ValueError: Si los bytes están vacíos o no representan una imagen válida.
+    """
+
+    if not isinstance(image_bytes, bytes):
+        raise TypeError(
+            "La imagen debe recibirse en formato bytes."
+        )
+
+    if not image_bytes:
+        raise ValueError(
+            "El archivo recibido esta vacío."
+        )
+
+    image_array = np.frombuffer(
+        image_bytes,
+        dtype=np.uint8
+    )
+
+    image = cv2.imdecode(
+        image_array,
+        cv2.IMREAD_COLOR
+    )
+
+    if image is None:
+        raise ValueError(
+            "No se pudo decodificar la imagen."
+        )
+
+    return image
