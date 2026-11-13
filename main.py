@@ -1,5 +1,11 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+
+from app import config
+
 from app.routers.health import router as health_router
+from app.routers.images import router as images_router
+from app.routers.operations import router as operations_router
 
 app = FastAPI(
     title="ArtScope API",
@@ -8,3 +14,13 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(images_router)
+app.include_router(operations_router)
+
+config.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+
+app.mount(
+    "/media",
+    StaticFiles(directory=str(config.STORAGE_DIR)),
+    name="media"
+)
