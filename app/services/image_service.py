@@ -6,9 +6,11 @@ from PIL import Image, UnidentifiedImageError
 
 from app.core import operations
 from app.core import imaging
+from app.core import analysis
 from app.core.storage import FileStorage
 from app import schemas
 from app import config
+from app.core import analysis
 
 
 def apply_image_operation(
@@ -125,3 +127,92 @@ def process_stored_image(
         url=stored_file.url,
         size_bytes=stored_file.size_bytes
     )
+
+def analyze_stored_image(file_name: str):
+    """
+    Recupera una imagen almacenada y calcula sus estadísticas de color y luminosisdad.
+    """
+
+    storage = FileStorage()
+
+    # 1. Recuperar la imagen original
+    image_bytes = storage.read(file_name)
+
+    # 2. Decodificar los bytes en una matriz NumPy
+    image = imaging.decode_image_bytes(image_bytes)
+
+    # 3. Calcular los histogramas de color
+    color_histograms = analysis.calculate_color_histograms(image)
+
+    # 4. Convertir la imagen BGR a escala de grises
+    grayscale_image = imaging.convert_to_grayscale(image)
+
+    # 5. Calcular el histograma y las estadísticas de luminosidad
+    grayscale_histogram = analysis.calculate_grayscale_histogram(
+        grayscale_image
+    )
+
+    # 6. Convertir los arrays NumPy a listas compatibles con JSON
+    return {
+        "color_histograms": {
+            channel: histogram.flatten().tolist()
+            for channel, histogram in color_histograms.items()
+        },
+    "grayscale":{
+        "histogram": grayscale_histogram["histogram"].tolist(),
+        "minimum": grayscale_histogram["minimum"],
+        "maximum": grayscale_histogram["maximum"],
+        "mean": grayscale_histogram ["mean"]
+    }
+    }
+
+
+def detect_stored_image_edges(
+        file_name: str,
+        threshold1: int = 100,
+        threshold2: int = 200
+):
+    """
+    Detecta los bordes de una imagen almacenada y guarda el resultado como una nueva imagen PNG.
+    """
+
+    storage = FileStorage()
+
+    # 1. Recuperar la imagen original
+    image_bytes = storage.read(file_name)
+
+    # 2. Decodificar la imagen
+    image = imaging.decode_image_bytes(image_bytes)
+
+    # 3. Convertir a escala de grises
+    grayscale_image = imaging.convert_to_grayscale(image)
+
+    # 4. Detectar los bordes mediante Canny
+    edges = analysis.detect_edges(
+        grayscale_image,
+        threshold1,
+        threshold2
+    )
+
+    # 5. Codificar el resultado como PNG
+    success, encoded_image = cv2.imencode(
+        ".png",
+        edges
+    )
+
+    if not success:
+        raise ValueError("No se pudo codificar la imagen de bordes.")
+
+    # 6. Guardar el resultado
+    stored_file = storage.save(
+        encoded_image.tobytes(),
+        "PNG"
+    )
+
+    return schemas.StoredImageResponse(
+        file_name=stored_file.file_name,
+        url=stored_file.url,
+        size_bytes=stored_file.size_bytes
+    )
+
+    

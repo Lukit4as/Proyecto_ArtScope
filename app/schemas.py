@@ -42,4 +42,20 @@ class OperationRequest(BaseModel):
     operation: str
     parameters: dict = Field(default_factory=dict)
 
-    
+
+class GrayscaleAnalysisResponse(BaseModel):
+    histogram : list[int]
+    minimum: int
+    maximum: int
+    mean: float
+
+
+class ColorHistogramResponses(BaseModel):
+    blue: list[int]
+    green: list[int]
+    red: list[int]
+
+
+class ImageAnalysisResponse(BaseModel):
+    color_histograms: ColorHistogramResponses
+    grayscale: GrayscaleAnalysisResponse
