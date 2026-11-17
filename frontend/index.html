@@ -5,23 +5,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="ArtScope - Laboratorio digital de análisis, restauración y procesamiento de pinturas">
+
+    <meta
+        name="description"
+        content="ArtScope - Laboratorio digital de análisis, restauración y procesamiento de pinturas"
+    >
+
     <title>ArtScope | Digital Art Lab</title>
+
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
-    <!-- Encabezado -->
+    <!-- =====================================
+         ENCABEZADO
+    ====================================== -->
+
     <header class="topbar">
 
         <div class="brand">
+
             <div class="brand-icon">A</div>
 
             <div>
                 <h1>ArtScope</h1>
                 <p>Digital Art Lab</p>
             </div>
+
         </div>
 
         <div class="header-status" id="server-status">
@@ -32,10 +43,14 @@
     </header>
 
 
-    <!-- Área principal de trabajo -->
+    <!-- =====================================
+         ÁREA PRINCIPAL DE TRABAJO
+    ====================================== -->
+
     <main class="workspace">
 
-        <!-- Panel izquierdo: biblioteca y carga -->
+        <!-- PANEL IZQUIERDO: BIBLIOTECA -->
+
         <aside class="sidebar panel">
 
             <div class="section-heading">
@@ -52,48 +67,76 @@
                 >
 
                 <span class="upload-icon">+</span>
+
                 <strong>Importar imagen</strong>
-                <span>Arrastrá una imagen o seleccioná un archivo</span>
-                <small>PNG, JPG, WEBP, BMP · Máximo 10 MB</small>
+
+                <span>
+                    Arrastrá una imagen o seleccioná un archivo
+                </span>
+
+                <small>
+                    PNG, JPG, WEBP, BMP · Máximo 10 MB
+                </small>
 
             </label>
 
             <div class="image-information" id="image-information">
+
                 <p>No hay ninguna imagen cargada.</p>
+
             </div>
 
         </aside>
 
 
-        <!-- Área central: visualización y comparación -->
+        <!-- =====================================
+             ÁREA CENTRAL: VISUALIZACIÓN
+        ====================================== -->
+
         <section class="main-view panel">
 
             <div class="section-heading">
+
                 <div>
                     <h2>Área de trabajo</h2>
-                    <p>Visualización y comparación de imágenes</p>
+
+                    <p>
+                        Visualización y comparación de imágenes
+                    </p>
                 </div>
+
             </div>
 
+
             <div class="image-comparison">
+
+                <!-- IMAGEN ORIGINAL -->
 
                 <figure class="image-container">
 
                     <figcaption>Imagen original</figcaption>
 
                     <div class="image-frame" id="original-frame">
+
                         <span>Esperando una imagen...</span>
+
                     </div>
 
                 </figure>
 
+
+                <!-- RESULTADO -->
 
                 <figure class="image-container">
 
                     <figcaption>Resultado</figcaption>
 
                     <div class="image-frame" id="result-frame">
-                        <span>El resultado aparecerá aquí.</span>
+
+                        <span>
+                            El resultado aparecerá aquí.
+                        </span>
+
                     </div>
 
                 </figure>
@@ -101,14 +144,23 @@
             </div>
 
 
-            <!-- Acciones sobre las imágenes -->
+            <!-- ACCIONES SOBRE LAS IMÁGENES -->
+
             <div class="image-actions" id="image-actions" hidden>
 
-                <button class="button secondary" id="btn-reset">
+                <button
+                    type="button"
+                    class="button secondary"
+                    id="btn-reset"
+                >
                     Restaurar original
                 </button>
 
-                <a class="button primary" id="btn-download" download>
+                <a
+                    class="button primary"
+                    id="btn-download"
+                    download
+                >
                     Descargar resultado
                 </a>
 
@@ -117,7 +169,10 @@
         </section>
 
 
-        <!-- Panel derecho: herramientas -->
+        <!-- =====================================
+             PANEL DERECHO: HERRAMIENTAS
+        ====================================== -->
+
         <aside class="tools-panel panel">
 
             <div class="section-heading">
@@ -125,7 +180,8 @@
             </div>
 
 
-            <!-- RESTAURACIÓN: OBJETIVO PRINCIPAL -->
+            <!-- RESTAURACIÓN DE PINTURAS -->
+
             <div class="tool-group restoration-group">
 
                 <h3>Restauración de pintura</h3>
@@ -135,9 +191,11 @@
                     texturas, pinceladas y características originales.
                 </p>
 
+
                 <label for="restoration-select">
                     Técnica de restauración
                 </label>
+
 
                 <select id="restoration-select">
 
@@ -159,9 +217,61 @@
 
                 </select>
 
+
+                <!-- PARÁMETROS DE RESTAURACIÓN -->
+
                 <div id="restoration-parameters"></div>
 
+
+                <!-- CONTROLES DE INPAINTING -->
+
+                <div
+                    id="inpainting-controls"
+                    class="restoration-selection-controls"
+                    hidden
+                >
+
+                    <label for="brush-size">
+
+                        Tamaño del pincel
+
+                        <span id="brush-size-value">20</span>
+
+                    </label>
+
+
+                    <input
+                        type="range"
+                        id="brush-size"
+                        min="5"
+                        max="80"
+                        value="20"
+                    >
+
+
+                    <button
+                        type="button"
+                        class="button secondary"
+                        id="btn-clear-mask"
+                    >
+                        Borrar selección
+                    </button>
+
+
+                    <p class="restoration-selection-info">
+
+                        Pintá sobre la imagen original las zonas
+                        que querés reconstruir.
+
+                    </p>
+
+                </div>
+
+
+                <!-- BOTÓN DE RESTAURACIÓN -->
+
                 <button
+                    type="button"
                     class="button primary full-width"
                     id="btn-restore"
                     disabled
@@ -169,15 +279,17 @@
                     Restaurar pintura
                 </button>
 
+
                 <small>
-                    El objetivo es preservar la identidad visual y las
-                    texturas originales de la obra.
+                    El objetivo es preservar la identidad visual
+                    y las texturas originales de la obra.
                 </small>
 
             </div>
 
 
             <!-- PROCESAMIENTO -->
+
             <div class="tool-group">
 
                 <h3>Procesamiento</h3>
@@ -186,20 +298,29 @@
                     Operación
                 </label>
 
+
                 <select id="operation-select">
 
                     <option value="brightness">Brillo</option>
+
                     <option value="contrast">Contraste</option>
+
                     <option value="blur">Desenfoque</option>
+
                     <option value="sharpen">Nitidez</option>
+
                     <option value="rotation">Rotación</option>
+
                     <option value="resize">Redimensionar</option>
 
                 </select>
 
+
                 <div id="operation-parameters"></div>
 
+
                 <button
+                    type="button"
                     class="button primary full-width"
                     id="btn-process"
                     disabled
@@ -211,11 +332,13 @@
 
 
             <!-- ANÁLISIS -->
+
             <div class="tool-group">
 
                 <h3>Análisis</h3>
 
                 <button
+                    type="button"
                     class="button secondary full-width"
                     id="btn-analysis"
                     disabled
@@ -223,7 +346,9 @@
                     Analizar imagen
                 </button>
 
+
                 <button
+                    type="button"
                     class="button secondary full-width"
                     id="btn-edges"
                     disabled
@@ -235,14 +360,20 @@
 
 
             <!-- DETECCIÓN DE BORDES -->
+
             <div class="tool-group">
 
                 <h3>Detección de bordes</h3>
 
+
                 <label for="threshold1">
+
                     Umbral inferior
+
                     <span id="threshold1-value">100</span>
+
                 </label>
+
 
                 <input
                     type="range"
@@ -252,10 +383,15 @@
                     value="100"
                 >
 
+
                 <label for="threshold2">
+
                     Umbral superior
+
                     <span id="threshold2-value">200</span>
+
                 </label>
+
 
                 <input
                     type="range"
@@ -272,20 +408,31 @@
     </main>
 
 
-    <!-- Resultados del análisis -->
+    <!-- =====================================
+         RESULTADOS DEL ANÁLISIS
+    ====================================== -->
+
     <section class="analysis-section panel">
 
         <div class="section-heading">
+
             <div>
+
                 <h2>Análisis de imagen</h2>
-                <p>Distribución de color y estadísticas de luminosidad</p>
+
+                <p>
+                    Distribución de color y estadísticas de luminosidad
+                </p>
+
             </div>
+
         </div>
 
 
         <div class="analysis-grid">
 
-            <!-- Histograma RGB -->
+            <!-- HISTOGRAMA RGB -->
+
             <article class="analysis-card">
 
                 <h3>Histograma RGB</h3>
@@ -295,15 +442,19 @@
             </article>
 
 
-            <!-- Histograma de luminosidad -->
+            <!-- HISTOGRAMA DE LUMINOSIDAD -->
+
             <article class="analysis-card">
 
                 <h3>Histograma de luminosidad</h3>
 
                 <canvas id="grayscale-histogram"></canvas>
 
+
                 <div id="image-statistics">
+
                     <p>Sin datos disponibles.</p>
+
                 </div>
 
             </article>
@@ -313,12 +464,24 @@
     </section>
 
 
-    <!-- Notificaciones -->
-    <div class="notifications" id="notifications"></div>
+    <!-- NOTIFICACIONES -->
+
+    <div
+        class="notifications"
+        id="notifications"
+    ></div>
 
 
-    <!-- JavaScript -->
+    <!-- =====================================
+         JAVASCRIPT
+    ====================================== -->
+
+    <!-- Primero se carga el módulo de Inpainting -->
+    <script src="inpainting.js"></script>
+
+    <!-- Después se carga la aplicación principal -->
     <script src="app.js"></script>
 
 </body>
+
 </html>
