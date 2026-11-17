@@ -704,3 +704,7 @@ select:focus-visible {
     }
 
 }
+
+#inpainting-controls[hidden] {
+    display: none !important;
+}

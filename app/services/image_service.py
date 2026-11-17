@@ -336,10 +336,12 @@ def restore_stored_image(
     de restauración y guarda el resultado como PNG.
 
     Técnicas disponibles:
+    - combined
     - denoise
     - color-correction
     - detail-enhancement
     - inpainting
+    - inpainting-ai
     """
 
     if parameters is None:
@@ -360,17 +362,41 @@ def restore_stored_image(
     # 2. Decodificar la imagen en formato BGR.
     image = imaging.decode_image_bytes(image_bytes)
 
-    # 3. Seleccionar la técnica.
+    # 3. Seleccionar las técnicas individuales.
     available_techniques = {
         "denoise": restoration.reduce_noise,
         "color-correction": restoration.correct_color,
         "detail-enhancement": restoration.enhance_details
     }
 
-    # 4. Ejecutar la técnica correspondiente.
-    if technique == "inpainting":
+    # 4. Ejecutar la restauración combinada global.
+    if technique == "combined":
 
-        # Recuperar la máscara enviada por el frontend.
+        operations_config = parameters.pop(
+            "operations",
+            None
+        )
+
+        if operations_config is None:
+            raise ValueError(
+                "No se recibieron las configuraciones "
+                "de la restauración combinada."
+            )
+
+        if parameters:
+            raise ValueError(
+                "Se recibieron parámetros no válidos "
+                "para la restauración combinada."
+            )
+
+        restored_image = restoration.restore_combined(
+            image,
+            operations_config
+        )
+
+    # 5. Inpainting tradicional.
+    elif technique == "inpainting":
+
         mask_base64 = parameters.pop(
             "mask_base64",
             None
@@ -386,7 +412,6 @@ def restore_stored_image(
             image.shape[:2]
         )
 
-        # Parámetros propios de Inpainting.
         radius = parameters.pop("radius", 3.0)
         method = parameters.pop("method", "telea")
 
@@ -402,6 +427,36 @@ def restore_stored_image(
             method=method
         )
 
+    # 6. Inpainting con LaMa.
+    elif technique == "inpainting-ai":
+
+        mask_base64 = parameters.pop(
+            "mask_base64",
+            None
+        )
+
+        if mask_base64 is None:
+            raise ValueError(
+                "Es necesario seleccionar una zona de la pintura."
+            )
+
+        mask = decode_restoration_mask(
+            mask_base64,
+            image.shape[:2]
+        )
+
+        if parameters:
+            raise ValueError(
+                "Se recibieron parámetros no válidos "
+                "para Inpainting con IA."
+            )
+
+        restored_image = restoration.reconstruct_damage_lama(
+            image,
+            mask
+        )
+
+    # 7. Técnicas individuales.
     elif technique in available_techniques:
 
         restored_image = available_techniques[technique](
@@ -415,7 +470,17 @@ def restore_stored_image(
             f"Técnica de restauración no disponible: {technique}"
         )
 
-    # 5. Codificar el resultado como PNG.
+    # 8. Comprobar que el resultado sea una imagen válida.
+    if (
+        not isinstance(restored_image, np.ndarray)
+        or restored_image.size == 0
+        or restored_image.dtype != np.uint8
+    ):
+        raise ValueError(
+            "La restauración no produjo una imagen válida."
+        )
+
+    # 9. Codificar el resultado como PNG.
     success, encoded_image = cv2.imencode(
         ".png",
         restored_image
@@ -426,7 +491,7 @@ def restore_stored_image(
             "No se pudo codificar la imagen restaurada."
         )
 
-    # 6. Guardar una nueva imagen.
+    # 10. Guardar una nueva imagen.
     # El archivo original permanece intacto.
     stored_file = storage.save(
         encoded_image.tobytes(),
