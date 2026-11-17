@@ -128,9 +128,11 @@ select:focus-visible {
     background: var(--text-muted);
     border-radius: 50%;
 }
+
 .status-dot.online {
     background: var(--success);
 }
+
 
 /* =========================================
    ESTRUCTURA PRINCIPAL
@@ -280,6 +282,8 @@ select:focus-visible {
     display: flex;
     justify-content: center;
     align-items: center;
+
+    position: relative;
 
     background-color: #121318;
     background-image:
@@ -485,6 +489,66 @@ select:focus-visible {
 
 
 /* =========================================
+   SELECCIÓN DE ZONAS PARA INPAINTING
+========================================= */
+
+.restoration-image-wrapper {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    max-height: 480px;
+    line-height: 0;
+}
+
+.restoration-image-wrapper img {
+    display: block;
+    max-width: 100%;
+    max-height: 480px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.restoration-mask-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    cursor: crosshair;
+    touch-action: none;
+}
+
+.restoration-mask-canvas.disabled {
+    pointer-events: none;
+}
+
+.restoration-selection-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.restoration-selection-controls input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+}
+
+.restoration-selection-controls .button {
+    width: 100%;
+}
+
+.restoration-selection-info {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* =========================================
    SECCIÓN DE ANÁLISIS
 ========================================= */
 
@@ -633,6 +697,10 @@ select:focus-visible {
 
     .header-status {
         font-size: 10px;
+    }
+
+    .restoration-image-wrapper {
+        max-width: 100%;
     }
 
 }
