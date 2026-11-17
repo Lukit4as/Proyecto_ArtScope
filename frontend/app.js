@@ -1,36 +1,28 @@
-
 // ========================================
 // ARTSCOPE - DIGITAL ART LAB
 // ========================================
 
 // Dirección del backend
-// Local: utiliza el servidor de desarrollo.
-// Producción: utiliza el backend publicado en Render.
 const API_BASE_URL =
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1"
         ? "http://127.0.0.1:8000"
         : "https://proyecto-artscope.onrender.com";
 
-
 // ========================================
 // 1. ELEMENTOS DEL HTML
 // ========================================
 
-// Servidor
 const serverStatus = document.getElementById("server-status");
 const statusText = document.getElementById("status-text");
 
-// Carga de imágenes
 const fileInput = document.getElementById("file-input");
 const dropzone = document.getElementById("dropzone");
 const imageInformation = document.getElementById("image-information");
 
-// Visualización
 const originalFrame = document.getElementById("original-frame");
 const resultFrame = document.getElementById("result-frame");
 
-// Botones
 const btnProcess = document.getElementById("btn-process");
 const btnAnalysis = document.getElementById("btn-analysis");
 const btnEdges = document.getElementById("btn-edges");
@@ -40,34 +32,27 @@ const btnReset = document.getElementById("btn-reset");
 const btnDownload = document.getElementById("btn-download");
 const imageActions = document.getElementById("image-actions");
 
-// Procesamiento
 const operationSelect = document.getElementById("operation-select");
 const operationParameters = document.getElementById("operation-parameters");
 
-// Restauración
 const restorationSelect = document.getElementById("restoration-select");
 const restorationParameters = document.getElementById("restoration-parameters");
 
-// Controles de Inpainting
 const inpaintingControls = document.getElementById("inpainting-controls");
 const brushSizeInput = document.getElementById("brush-size");
 const brushSizeValue = document.getElementById("brush-size-value");
 const clearMaskButton = document.getElementById("btn-clear-mask");
 
-// Análisis
 const colorHistogram = document.getElementById("color-histogram");
 const grayscaleHistogram = document.getElementById("grayscale-histogram");
 const imageStatistics = document.getElementById("image-statistics");
 
-// Detección de bordes
 const threshold1Input = document.getElementById("threshold1");
 const threshold2Input = document.getElementById("threshold2");
 const threshold1Value = document.getElementById("threshold1-value");
 const threshold2Value = document.getElementById("threshold2-value");
 
-// Notificaciones
 const notifications = document.getElementById("notifications");
-
 
 // ========================================
 // 2. ESTADO DE LA APLICACIÓN
@@ -77,7 +62,11 @@ let currentImage = null;
 let currentResult = null;
 let currentFileName = null;
 
-// Controlador independiente del pincel de Inpainting.
+const INPAINTING_TECHNIQUES = ["inpainting", "inpainting-ai"];
+
+const isInpaintingTechnique = (technique) =>
+    INPAINTING_TECHNIQUES.includes(technique);
+
 const inpaintingTool =
     window.ArtScopeInpainting &&
     originalFrame &&
@@ -97,24 +86,20 @@ if (!inpaintingTool) {
         "No se pudo inicializar Inpainting. Revisá inpainting.js y los controles del HTML."
     );
 } else {
-    // El módulo avisa cuando el usuario dibuja o limpia la máscara.
     inpaintingTool.setSelectionCallback((hasSelection) => {
         btnRestore.disabled =
             !currentFileName ||
-            restorationSelect.value !== "inpainting" ||
+            !isInpaintingTechnique(restorationSelect.value) ||
             !hasSelection;
     });
 }
-
 
 // ========================================
 // 3. CONEXIÓN CON EL BACKEND
 // ========================================
 
 async function checkServerStatus() {
-
     try {
-
         const response = await fetch(`${API_BASE_URL}/health`);
 
         if (!response.ok) {
@@ -129,22 +114,18 @@ async function checkServerStatus() {
         console.log("Servidor:", data);
 
     } catch (error) {
-
         serverStatus.querySelector(".status-dot").classList.remove("online");
         statusText.textContent = "Servidor desconectado";
 
         console.error("Error de conexión:", error);
-
     }
 }
-
 
 // ========================================
 // 4. NOTIFICACIONES
 // ========================================
 
 function showNotification(message, type = "success") {
-
     const notification = document.createElement("div");
 
     notification.className = `notification ${type}`;
@@ -155,32 +136,26 @@ function showNotification(message, type = "success") {
     setTimeout(() => {
         notification.remove();
     }, 4000);
-
 }
-
 
 // ========================================
 // 5. VISUALIZACIÓN DE IMÁGENES
 // ========================================
 
 function displayImage(container, imageUrl, altText) {
-
     const image = document.createElement("img");
 
     image.src = imageUrl;
     image.alt = altText;
 
     container.replaceChildren(image);
-
 }
-
 
 // ========================================
 // 6. CARGA DE IMÁGENES
 // ========================================
 
 async function uploadImage(file) {
-
     if (!file) return;
 
     const allowedTypes = [
@@ -200,7 +175,6 @@ async function uploadImage(file) {
         return;
     }
 
-    // Evitar conservar una máscara asociada a la imagen anterior.
     if (inpaintingTool) {
         inpaintingTool.disable();
     }
@@ -210,7 +184,6 @@ async function uploadImage(file) {
     }
 
     try {
-
         showNotification("Subiendo imagen...", "success");
 
         const formData = new FormData();
@@ -233,42 +206,32 @@ async function uploadImage(file) {
 
         const imageUrl = `${API_BASE_URL}${data.stored_image.url}`;
 
-        // Mostrar original
         displayImage(
             originalFrame,
             imageUrl,
             "Imagen original"
         );
 
-        // Limpiar resultado anterior
         resultFrame.innerHTML =
             "<span>Aplicá una operación para ver el resultado.</span>";
 
-        // Información técnica
         imageInformation.innerHTML = `
             <p><strong>Archivo:</strong> ${file.name}</p>
-
-            <p><strong>Formato:</strong>
-                ${data.image_info.format}
-            </p>
-
+            <p><strong>Formato:</strong> ${data.image_info.format}</p>
             <p><strong>Dimensiones:</strong>
                 ${data.image_info.width} × ${data.image_info.height}
             </p>
-
             <p><strong>Tamaño:</strong>
                 ${(file.size / 1024).toFixed(2)} KB
             </p>
         `;
 
-        // Habilitar herramientas
         btnProcess.disabled = false;
         btnAnalysis.disabled = false;
         btnEdges.disabled = false;
 
         imageActions.hidden = true;
 
-        // Actualizar controles
         renderOperationParameters();
         renderRestorationParameters();
 
@@ -280,28 +243,21 @@ async function uploadImage(file) {
         console.log("Imagen cargada:", data);
 
     } catch (error) {
-
         console.error("Error al cargar imagen:", error);
         showNotification(error.message, "error");
-
     }
-
 }
-
 
 // ========================================
 // 7. PROCESAMIENTO DE IMÁGENES
 // ========================================
 
 function renderOperationParameters() {
-
     const operation = operationSelect.value;
     let html = "";
 
     switch (operation) {
-
         case "brightness":
-
             html = `
                 <label for="beta">Nivel de brillo</label>
                 <input type="number" id="beta"
@@ -310,7 +266,6 @@ function renderOperationParameters() {
             break;
 
         case "contrast":
-
             html = `
                 <label for="alpha">Nivel de contraste</label>
                 <input type="number" id="alpha"
@@ -319,7 +274,6 @@ function renderOperationParameters() {
             break;
 
         case "blur":
-
             html = `
                 <label for="kernel-size">Tamaño del desenfoque</label>
                 <input type="number" id="kernel-size"
@@ -329,14 +283,12 @@ function renderOperationParameters() {
             break;
 
         case "sharpen":
-
             html = `
                 <p>Se aplicará un filtro para resaltar los detalles.</p>
             `;
             break;
 
         case "rotation":
-
             html = `
                 <label for="angle">Ángulo de rotación</label>
                 <input type="number" id="angle" value="90">
@@ -344,7 +296,6 @@ function renderOperationParameters() {
             break;
 
         case "resize":
-
             const width = currentImage
                 ? currentImage.image_info.width : 800;
 
@@ -359,7 +310,6 @@ function renderOperationParameters() {
                 <input type="number" id="height" min="1" value="${height}">
 
                 <label for="interpolation">Interpolación</label>
-
                 <select id="interpolation">
                     <option value="linear">Lineal</option>
                     <option value="nearest">Vecino más cercano</option>
@@ -372,18 +322,13 @@ function renderOperationParameters() {
                 </label>
             `;
             break;
-
     }
 
     operationParameters.innerHTML = html;
-
 }
 
-
 function getOperationParameters() {
-
     switch (operationSelect.value) {
-
         case "brightness":
             return {
                 beta: Number(document.getElementById("beta").value)
@@ -420,21 +365,16 @@ function getOperationParameters() {
 
         default:
             return {};
-
     }
-
 }
 
-
 async function processImage() {
-
     if (!currentFileName) {
         showNotification("Primero cargá una imagen.", "error");
         return;
     }
 
     try {
-
         btnProcess.disabled = true;
 
         const operation = operationSelect.value;
@@ -485,25 +425,19 @@ async function processImage() {
         console.log("Resultado del procesamiento:", data);
 
     } catch (error) {
-
         console.error("Error de procesamiento:", error);
         showNotification(error.message, "error");
 
     } finally {
-
         btnProcess.disabled = !currentFileName;
-
     }
-
 }
-
 
 // ========================================
 // 8. ANÁLISIS DE IMÁGENES
 // ========================================
 
 function drawHistogram(canvas, datasets, colors) {
-
     const context = canvas.getContext("2d");
 
     const width = canvas.clientWidth || 500;
@@ -525,7 +459,6 @@ function drawHistogram(canvas, datasets, colors) {
         ...datasets.flatMap(dataset => dataset)
     );
 
-    // Ejes
     context.strokeStyle = "#888";
     context.lineWidth = 1;
 
@@ -535,15 +468,12 @@ function drawHistogram(canvas, datasets, colors) {
     context.lineTo(width - padding, height - padding);
     context.stroke();
 
-    // Curvas
     datasets.forEach((dataset, index) => {
-
         context.beginPath();
         context.strokeStyle = colors[index];
         context.lineWidth = 1.5;
 
         dataset.forEach((value, position) => {
-
             const x = padding +
                 (position / (dataset.length - 1)) * graphWidth;
 
@@ -555,25 +485,19 @@ function drawHistogram(canvas, datasets, colors) {
             } else {
                 context.lineTo(x, y);
             }
-
         });
 
         context.stroke();
-
     });
-
 }
 
-
 async function analyzeImage() {
-
     if (!currentFileName) {
         showNotification("Primero cargá una imagen.", "error");
         return;
     }
 
     try {
-
         btnAnalysis.disabled = true;
 
         showNotification("Analizando imagen...", "success");
@@ -588,7 +512,6 @@ async function analyzeImage() {
             throw new Error(data.detail || "Error al analizar la imagen.");
         }
 
-        // Histograma RGB
         drawHistogram(
             colorHistogram,
             [
@@ -599,23 +522,19 @@ async function analyzeImage() {
             ["#e05252", "#45b878", "#548de5"]
         );
 
-        // Histograma de luminosidad
         drawHistogram(
             grayscaleHistogram,
             [data.grayscale.histogram],
             ["#d5d5d5"]
         );
 
-        // Estadísticas
         imageStatistics.innerHTML = `
             <p><strong>Mínimo:</strong>
                 ${data.grayscale.minimum}
             </p>
-
             <p><strong>Máximo:</strong>
                 ${data.grayscale.maximum}
             </p>
-
             <p><strong>Media:</strong>
                 ${Number(data.grayscale.mean).toFixed(2)}
             </p>
@@ -629,24 +548,18 @@ async function analyzeImage() {
         console.log("Análisis:", data);
 
     } catch (error) {
-
         console.error("Error de análisis:", error);
         showNotification(error.message, "error");
 
     } finally {
-
         btnAnalysis.disabled = !currentFileName;
-
     }
-
 }
-
 
 // ========================================
 // 9. DETECCIÓN DE BORDES
 // ========================================
 
-// Actualización de los valores de los controles
 threshold1Input.addEventListener("input", () => {
     threshold1Value.textContent = threshold1Input.value;
 });
@@ -655,9 +568,7 @@ threshold2Input.addEventListener("input", () => {
     threshold2Value.textContent = threshold2Input.value;
 });
 
-
 async function detectImageEdges() {
-
     if (!currentFileName) {
         showNotification("Primero cargá una imagen.", "error");
         return;
@@ -675,7 +586,6 @@ async function detectImageEdges() {
     }
 
     try {
-
         btnEdges.disabled = true;
 
         showNotification("Detectando bordes...", "success");
@@ -719,32 +629,70 @@ async function detectImageEdges() {
         console.log("Bordes:", data);
 
     } catch (error) {
-
         console.error("Error de detección:", error);
         showNotification(error.message, "error");
 
     } finally {
-
         btnEdges.disabled = !currentFileName;
-
     }
-
 }
-
 
 // ========================================
 // 10. RESTAURACIÓN DE PINTURAS
 // ========================================
 
 function renderRestorationParameters() {
-
     const technique = restorationSelect.value;
     let html = "";
 
     switch (technique) {
+        case "combined":
+            html = `
+                <p>
+                    Activá las técnicas que quieras combinar y ajustá
+                    su intensidad. Se ejecutarán juntas al presionar
+                    "Restaurar pintura".
+                </p>
+
+                <div class="combined-restoration-control">
+                    <label>
+                        <input type="checkbox" id="combined-denoise-enabled" checked>
+                        Reducción de ruido
+                    </label>
+                    <label for="combined-denoise-intensity">
+                        Intensidad: <span id="combined-denoise-value">50</span>%
+                    </label>
+                    <input type="range" id="combined-denoise-intensity"
+                        min="0" max="100" value="50">
+                </div>
+
+                <div class="combined-restoration-control">
+                    <label>
+                        <input type="checkbox" id="combined-color-enabled" checked>
+                        Corrección de color e iluminación
+                    </label>
+                    <label for="combined-color-intensity">
+                        Intensidad: <span id="combined-color-value">50</span>%
+                    </label>
+                    <input type="range" id="combined-color-intensity"
+                        min="0" max="100" value="50">
+                </div>
+
+                <div class="combined-restoration-control">
+                    <label>
+                        <input type="checkbox" id="combined-detail-enabled" checked>
+                        Mejora de detalles
+                    </label>
+                    <label for="combined-detail-intensity">
+                        Intensidad: <span id="combined-detail-value">35</span>%
+                    </label>
+                    <input type="range" id="combined-detail-intensity"
+                        min="0" max="100" value="35">
+                </div>
+            `;
+            break;
 
         case "denoise":
-
             html = `
                 <label for="denoise-diameter">
                     Intensidad espacial
@@ -783,12 +731,9 @@ function renderRestorationParameters() {
                     value="20"
                 >
             `;
-
             break;
 
-
         case "color-correction":
-
             html = `
                 <label for="color-clip">
                     Intensidad de contraste local
@@ -815,12 +760,9 @@ function renderRestorationParameters() {
                     value="8"
                 >
             `;
-
             break;
 
-
         case "detail-enhancement":
-
             html = `
                 <label for="detail-strength">
                     Intensidad de detalle
@@ -848,36 +790,55 @@ function renderRestorationParameters() {
                     value="1"
                 >
             `;
-
             break;
 
-
         case "inpainting":
-
             html = `
                 <p>
                     Seleccioná con el pincel las zonas dañadas de la pintura.
                     La región marcada será reconstruida utilizando los píxeles
-                    de su entorno.
+                    de su entorno mediante los métodos tradicionales de OpenCV.
                 </p>
             `;
-
             break;
 
+        case "inpainting-ai":
+            html = `
+                <p>
+                    Seleccioná con el pincel las zonas dañadas de la pintura.
+                    La reconstrucción será realizada mediante inteligencia
+                    artificial utilizando el modelo LaMa.
+                </p>
+            `;
+            break;
     }
 
     restorationParameters.innerHTML = html;
 
-    const isInpainting = technique === "inpainting";
+    if (technique === "combined") {
+        const intensityControls = [
+            ["combined-denoise-intensity", "combined-denoise-value"],
+            ["combined-color-intensity", "combined-color-value"],
+            ["combined-detail-intensity", "combined-detail-value"]
+        ];
 
-    // Los controles del pincel solo se muestran para Inpainting.
+        intensityControls.forEach(([inputId, valueId]) => {
+            const input = document.getElementById(inputId);
+            const value = document.getElementById(valueId);
+
+            input.addEventListener("input", () => {
+                value.textContent = input.value;
+            });
+        });
+    }
+
+    const isInpainting = isInpaintingTechnique(technique);
+
     if (inpaintingControls) {
         inpaintingControls.hidden = !isInpainting;
     }
 
-    // Activar el pincel cuando existe una imagen cargada.
     if (isInpainting && currentFileName && inpaintingTool) {
-
         try {
             inpaintingTool.enable();
         } catch (error) {
@@ -886,87 +847,97 @@ function renderRestorationParameters() {
         }
 
     } else if (inpaintingTool) {
-
-        // Al cambiar de técnica se descarta la máscara anterior.
         inpaintingTool.disable();
     }
 
-    // Restaurar solo se habilita cuando hay imagen y selección válida.
     btnRestore.disabled =
         !currentFileName ||
         (isInpainting && (
             !inpaintingTool || !inpaintingTool.hasMaskSelection()
         ));
-
 }
 
-
 function getRestorationParameters() {
-
     switch (restorationSelect.value) {
+        case "combined":
+            return {
+                operations: {
+                    denoise: {
+                        enabled: document.getElementById(
+                            "combined-denoise-enabled"
+                        ).checked,
+                        intensity: Number(document.getElementById(
+                            "combined-denoise-intensity"
+                        ).value)
+                    },
+                    color_correction: {
+                        enabled: document.getElementById(
+                            "combined-color-enabled"
+                        ).checked,
+                        intensity: Number(document.getElementById(
+                            "combined-color-intensity"
+                        ).value)
+                    },
+                    detail_enhancement: {
+                        enabled: document.getElementById(
+                            "combined-detail-enabled"
+                        ).checked,
+                        intensity: Number(document.getElementById(
+                            "combined-detail-intensity"
+                        ).value)
+                    }
+                }
+            };
 
         case "denoise":
-
             return {
                 diameter: Number(
                     document.getElementById("denoise-diameter").value
                 ),
-
                 sigma_color: Number(
                     document.getElementById("denoise-color").value
                 ),
-
                 sigma_space: Number(
                     document.getElementById("denoise-space").value
                 )
             };
 
-
         case "color-correction":
-
             return {
                 clip_limit: Number(
                     document.getElementById("color-clip").value
                 ),
-
                 tile_grid_size: Number(
                     document.getElementById("color-grid").value
                 )
             };
 
-
         case "detail-enhancement":
-
             return {
                 strength: Number(
                     document.getElementById("detail-strength").value
                 ),
-
                 sigma: Number(
                     document.getElementById("detail-sigma").value
                 )
             };
 
-
         default:
             return {};
-
     }
-
 }
 
-
 async function restoreImage() {
-
     if (!currentFileName) {
         showNotification("Primero cargá una imagen.", "error");
         return;
     }
 
     const technique = restorationSelect.value;
+    const usesInpaintingMask = isInpaintingTechnique(technique);
 
     if (
-        technique === "inpainting" &&
+        usesInpaintingMask &&
         (!inpaintingTool || !inpaintingTool.hasMaskSelection())
     ) {
         showNotification(
@@ -977,16 +948,14 @@ async function restoreImage() {
     }
 
     try {
-
         btnRestore.disabled = true;
 
-        // Inpainting necesita la máscara dibujada por el usuario.
-        // Las otras técnicas conservan sus parámetros habituales.
-        const parameters = technique === "inpainting"
+        const parameters = usesInpaintingMask
             ? {
                 mask_base64: inpaintingTool.getMaskBase64(),
-                radius: 3,
-                method: "telea"
+                ...(technique === "inpainting"
+                    ? { radius: 3, method: "telea" }
+                    : {})
             }
             : getRestorationParameters();
 
@@ -996,11 +965,9 @@ async function restoreImage() {
             `${API_BASE_URL}/images/${encodeURIComponent(currentFileName)}/restore`,
             {
                 method: "POST",
-
                 headers: {
                     "Content-Type": "application/json"
                 },
-
                 body: JSON.stringify({
                     operation: technique,
                     parameters
@@ -1037,34 +1004,26 @@ async function restoreImage() {
         console.log("Restauración:", data);
 
     } catch (error) {
-
         console.error("Error de restauración:", error);
         showNotification(error.message, "error");
 
     } finally {
-
         btnRestore.disabled =
             !currentFileName ||
             (
-                restorationSelect.value === "inpainting" &&
+                isInpaintingTechnique(restorationSelect.value) &&
                 (!inpaintingTool || !inpaintingTool.hasMaskSelection())
             );
-
     }
-
 }
-
 
 // ========================================
 // 11. RESTABLECER VISTA ORIGINAL
 // ========================================
 
 function resetImageView() {
-
     if (!currentImage) return;
 
-    // Desmontar el canvas antes de reemplazar la imagen original.
-    // Esto descarta la máscara y evita referencias a elementos antiguos.
     if (inpaintingTool) {
         inpaintingTool.disable();
     }
@@ -1078,9 +1037,8 @@ function resetImageView() {
         "Imagen original"
     );
 
-    // Si Inpainting sigue seleccionado, volver a activar el pincel
-    // sobre la imagen original, ahora sin ninguna selección.
-    const isInpainting = restorationSelect.value === "inpainting";
+    const isInpainting =
+        isInpaintingTechnique(restorationSelect.value);
 
     if (inpaintingControls) {
         inpaintingControls.hidden = !isInpainting;
@@ -1108,38 +1066,93 @@ function resetImageView() {
         "Vista original recuperada.",
         "success"
     );
-
 }
 
+// ========================================
+// 12. DESCARGA DIRECTA DEL RESULTADO
+// ========================================
+
+async function downloadResult(event) {
+    event.preventDefault();
+
+    if (!currentResult || !currentResult.url) {
+        showNotification(
+            "No hay ningún resultado para descargar.",
+            "error"
+        );
+        return;
+    }
+
+    try {
+        btnDownload.disabled = true;
+
+        const downloadUrl = `${API_BASE_URL}${currentResult.url}`;
+        const response = await fetch(downloadUrl);
+
+        if (!response.ok) {
+            throw new Error("No se pudo descargar la imagen.");
+        }
+
+        const imageBlob = await response.blob();
+        const temporaryUrl = URL.createObjectURL(imageBlob);
+        const downloadLink = document.createElement("a");
+
+        downloadLink.href = temporaryUrl;
+        downloadLink.download =
+            currentResult.file_name || "artscope_resultado.png";
+
+        downloadLink.style.display = "none";
+
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+
+        window.setTimeout(() => {
+            URL.revokeObjectURL(temporaryUrl);
+        }, 1000);
+
+        showNotification(
+            "Imagen descargada correctamente.",
+            "success"
+        );
+
+    } catch (error) {
+        console.error("Error al descargar el resultado:", error);
+
+        showNotification(
+            error.message || "No se pudo descargar la imagen.",
+            "error"
+        );
+
+    } finally {
+        btnDownload.disabled = false;
+    }
+}
 
 // ========================================
-// 12. EVENTOS DE LA APLICACIÓN
+// 13. EVENTOS DE LA APLICACIÓN
 // ========================================
 
-// Selección de archivo
 fileInput.addEventListener("change", (event) => {
     uploadImage(event.target.files[0]);
 });
 
-// Cambio de operación
 operationSelect.addEventListener("change", renderOperationParameters);
 
-// Cambio de técnica de restauración
 restorationSelect.addEventListener(
     "change",
     renderRestorationParameters
 );
 
-// Botones principales
 btnProcess.addEventListener("click", processImage);
 btnAnalysis.addEventListener("click", analyzeImage);
 btnEdges.addEventListener("click", detectImageEdges);
 btnRestore.addEventListener("click", restoreImage);
 btnReset.addEventListener("click", resetImageView);
-
+btnDownload.addEventListener("click", downloadResult);
 
 // ========================================
-// 13. INICIALIZACIÓN
+// 14. INICIALIZACIÓN
 // ========================================
 
 renderOperationParameters();
