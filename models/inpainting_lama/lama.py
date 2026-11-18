@@ -3,20 +3,24 @@ import cv2 as cv
 import numpy as np
 
 
+# Reducir memoria auxiliar utilizada por OpenCV.
+cv.setNumThreads(1)
+cv.ocl.setUseOpenCL(False)
+
+
 class Lama:
     INPUT_SIZE = 512
 
     def __init__(
         self,
         modelPath="inpainting_lama_2025jan.onnx",
-        backendId=0,
-        targetId=0
+        backendId=cv.dnn.DNN_BACKEND_OPENCV,
+        targetId=cv.dnn.DNN_TARGET_CPU
     ):
         self._modelPath = modelPath
         self._backendId = backendId
         self._targetId = targetId
 
-        # Cargar el modelo ONNX.
         self._model = cv.dnn.readNetFromONNX(self._modelPath)
 
         self.setBackendAndTarget(
@@ -37,14 +41,10 @@ class Lama:
 
     def infer(self, image, mask):
         """
-        Ejecuta la reconstrucción con LaMa conservando
-        las proporciones originales de la imagen.
-
-        La imagen se adapta a 512x512 mediante padding.
-        La máscara utiliza exactamente la misma transformación.
+        Ejecuta LaMa con entrada de 512x512,
+        conservando las proporciones de la imagen.
         """
 
-        # Validar imagen.
         if (
             not isinstance(image, np.ndarray)
             or image.ndim != 3
@@ -55,7 +55,6 @@ class Lama:
                 "La imagen debe ser un array BGR uint8 de tres canales."
             )
 
-        # Validar máscara.
         if (
             not isinstance(mask, np.ndarray)
             or mask.ndim != 2
@@ -68,24 +67,14 @@ class Lama:
 
         original_height, original_width = image.shape[:2]
 
-        # ========================================
-        # 1. REDIMENSIONAMIENTO PROPORCIONAL
-        # ========================================
-
+        # 1. Redimensionamiento proporcional.
         scale = min(
             self.INPUT_SIZE / original_width,
             self.INPUT_SIZE / original_height
         )
 
-        resized_width = max(
-            1,
-            int(round(original_width * scale))
-        )
-
-        resized_height = max(
-            1,
-            int(round(original_height * scale))
-        )
+        resized_width = max(1, int(round(original_width * scale)))
+        resized_height = max(1, int(round(original_height * scale)))
 
         resized_image = cv.resize(
             image,
@@ -99,25 +88,16 @@ class Lama:
             interpolation=cv.INTER_NEAREST
         )
 
-        # ========================================
-        # 2. CALCULAR EL PADDING
-        # ========================================
-
+        # 2. Calcular padding.
         horizontal_padding = self.INPUT_SIZE - resized_width
         vertical_padding = self.INPUT_SIZE - resized_height
 
         left = horizontal_padding // 2
         right = horizontal_padding - left
-
         top = vertical_padding // 2
         bottom = vertical_padding - top
 
-        # ========================================
-        # 3. APLICAR PADDING
-        # ========================================
-
-        # Reflejar los bordes de la pintura evita
-        # introducir franjas negras artificiales.
+        # 3. Aplicar padding.
         padded_image = cv.copyMakeBorder(
             resized_image,
             top,
@@ -127,8 +107,6 @@ class Lama:
             cv.BORDER_REFLECT_101
         )
 
-        # El padding de la máscara debe quedar en cero:
-        # esas zonas no deben reconstruirse.
         padded_mask = cv.copyMakeBorder(
             resized_mask,
             top,
@@ -139,10 +117,11 @@ class Lama:
             value=0
         )
 
-        # ========================================
-        # 4. PREPARAR LAS ENTRADAS DEL MODELO
-        # ========================================
+        # Liberar las imágenes intermedias que ya no se necesitan.
+        del resized_image
+        del resized_mask
 
+        # 4. Preparar entradas del modelo.
         image_blob = cv.dnn.blobFromImage(
             padded_image,
             1.0 / 255.0,
@@ -161,14 +140,20 @@ class Lama:
             crop=False
         )
 
-        mask_blob = (mask_blob > 0).astype(np.float32)
+        # Convertir la máscara a valores binarios sin crear
+        # un segundo array temporal.
+        np.greater(mask_blob, 0, out=mask_blob)
 
-        # ========================================
-        # 5. EJECUTAR LA INFERENCIA
-        # ========================================
+        del padded_image
+        del padded_mask
 
+        # 5. Inferencia.
         self._model.setInput(image_blob, "image")
         self._model.setInput(mask_blob, "mask")
+
+        # Las entradas ya fueron transferidas al objeto Net.
+        del image_blob
+        del mask_blob
 
         output = self._model.forward()
 
@@ -181,38 +166,27 @@ class Lama:
                 f"Formato de salida LaMa inesperado: {output.shape}"
             )
 
-        # ========================================
-        # 6. CONVERTIR LA SALIDA A IMAGEN
-        # ========================================
+        # 6. Convertir salida.
+        result = output[0].transpose(1, 2, 0)
+        result = np.clip(result, 0, 255).astype(np.uint8)
 
-        result = output[0]
-        result = np.transpose(result, (1, 2, 0))
+        del output
 
-        # El modelo devuelve valores en el rango 0-255.
-        # No multiplicar nuevamente por 255.
-        result = np.clip(
-            result,
-            0,
-            255
-        ).astype(np.uint8)
-
-        # ========================================
-        # 7. ELIMINAR EL PADDING
-        # ========================================
-
+        # 7. Eliminar padding.
         result = result[
             top:top + resized_height,
             left:left + resized_width
         ]
 
-        # ========================================
-        # 8. RECUPERAR LAS DIMENSIONES ORIGINALES
-        # ========================================
-
-        result = cv.resize(
-            result,
-            (original_width, original_height),
-            interpolation=cv.INTER_CUBIC
-        )
+        # 8. Recuperar dimensiones originales.
+        if (
+            result.shape[1] != original_width
+            or result.shape[0] != original_height
+        ):
+            result = cv.resize(
+                result,
+                (original_width, original_height),
+                interpolation=cv.INTER_CUBIC
+            )
 
         return result
